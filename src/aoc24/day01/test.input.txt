@@ -1,18 +1,6 @@
-aoc-2024
-├── src
-│   ├── day01
-│   │   ├── index.ts
-│   │   ├── input.txt
-│   │   └── test.input.txt
-│   ├── day02
-│   │   ├── index.ts
-│   │   ├── input.txt
-│   │   └── test.input.txt
-│   └── utils
-│       └── index.ts
-├── .vscode
-│   └── launch.json
-├── jest.config.js
-├── package.json
-├── tsconfig.json
-└── README.md
+3   4
+4   3
+2   5
+1   3
+3   9
+3   3
