@@ -1,0 +1,2 @@
+# Test input data for Day 2 challenge
+# Add your test cases below
