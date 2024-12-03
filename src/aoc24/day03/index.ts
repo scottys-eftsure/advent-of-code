@@ -12,6 +12,29 @@ class Multiply extends Instruction {
         this.a = a;
         this.b = b;
     }
+
+    toString(): string {
+        return `Multiply(a=${this.a}, b=${this.b})`;
+    }
+}
+
+class Do extends Instruction {
+    constructor() {
+        super();
+    }
+
+    toString(): string {
+        return `Do()`;
+    }
+}
+
+class Dont extends Instruction {
+    constructor() {
+        super();
+    }
+    toString(): string {
+        return `Dont()`;
+    }
 }
 
 export function readInput(): string {
@@ -26,8 +49,31 @@ export function processData(data: string): Multiply[] {
 
     let memoryUnits = [];
     for (let match of matches || []) {
-        const [_, a, b] = match.match(/mul\((\d*),(\d*)\)/) || [];
-        memoryUnits.push(new Multiply(parseInt(a, 10), parseInt(b, 10)));
+            const [_, a, b] = match.match(/mul\((\d*),(\d*)\)/) || [];
+            memoryUnits.push(new Multiply(parseInt(a, 10), parseInt(b, 10)));
+    }
+
+    return memoryUnits;
+}
+
+
+export function getInstructions(data: string): Instruction[] {
+
+    const regex = /mul\((\d*),(\d*)\)|do\(\)|don\'t\(\)/g;
+    const matches = data.match(regex);
+
+    let memoryUnits = [];
+    for (let match of matches || []) {
+        if (match === 'do()') {
+            memoryUnits.push(new Do());
+            continue;
+        } else if (match === 'don\'t()') {
+            memoryUnits.push(new Dont());
+            continue;
+        } else {
+            const [_, a, b] = match.match(/mul\((\d*),(\d*)\)/) || [];
+            memoryUnits.push(new Multiply(parseInt(a, 10), parseInt(b, 10)));
+        }
     }
 
     return memoryUnits;
@@ -41,6 +87,25 @@ export function getTotals(data: Multiply[]): number {
     return total;
 }
 
+export function processInstructions(data: Instruction[]): number {
+    let doMultiply: boolean = true;
+
+    let total = 0;
+
+    for (let instruction of data) {
+        if (instruction instanceof Do) {
+            doMultiply = true;
+        } else if (instruction instanceof Dont) {
+            doMultiply = false;
+        } else if (instruction instanceof Multiply) {
+            if (doMultiply) {
+                total += instruction.a * instruction.b;
+            }
+        }
+    }
+    return total;
+}
+
 function part1() {
     let input = readInput();
     let data = processData(input);
@@ -50,8 +115,9 @@ function part1() {
 
 function part2() {
     let input = readInput();
-    let data = processData(input);
-    return 0;
+    let data = getInstructions(input);
+    let total = processInstructions(data);
+    return total;
 }
 
 console.log(`Part 1 Answer: ${part1()}`);
