@@ -1,0 +1,14 @@
+# Ignore everything recursively
+*
+
+# But not the .ts files
+!*.ts
+
+# Check subdirectories too
+!*/
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+
+
