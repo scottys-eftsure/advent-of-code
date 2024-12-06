@@ -9,7 +9,7 @@ interface ProcessedData {
 }
 
 export function readInput(): string {
-    const inputPath = join(__dirname, 'test.input.txt');
+    const inputPath = join(__dirname, 'input.txt');
     return readFileSync(inputPath, 'utf-8');
 }
 
@@ -85,20 +85,26 @@ class Manual {
 
     }
 
-    getFirstPage(pages: Page[]): Page {
-        let firstPage = pages[0];
-        return firstPage;
-    }
+    // getFirstPage(pages: Page[]): Page {
+    //     let firstPage = pages[0];
+    //     return firstPage;
+    // }
 
+    // orderPages(pages: Page[]): Page[] {
+    //     let orderedPages = [];
+    //     let page = pages[0];
+    //     orderedPages.push(page);
+    //     while (page.pagesAfter.length > 0) {
+    //         page = page.pagesAfter[0];
+    //         orderedPages.push(page);
+    //     }
+    //     return orderedPages;
+    // }
+
+    
     orderPages(pages: Page[]): Page[] {
-        let orderedPages = [];
-        let page = pages[0];
-        orderedPages.push(page);
-        while (page.pagesAfter.length > 0) {
-            page = page.pagesAfter[0];
-            orderedPages.push(page);
-        }
-        return orderedPages;
+        let orderedPages = pages.sort((a, b) => a.isAfter(b) ? 1 : -1);
+        return orderedPages
     }
 }
 
@@ -163,7 +169,9 @@ function part2() {
         let isInOrder = manual.checkOrder(pages)
         if (!isInOrder) {
 
-            let middlePage = pages[Math.floor(pages.length / 2)];
+            let orderedPages = manual.orderPages(pages);
+
+            let middlePage = orderedPages[Math.floor(pages.length / 2)];
             check += middlePage.num;
         }
     }
@@ -172,4 +180,4 @@ function part2() {
 }
 
 console.log(`Part 1 Answer: ${part1()}`);
-// console.log(`Part 2 Answer: ${part2()}`);
+console.log(`Part 2 Answer: ${part2()}`);
