@@ -85,6 +85,10 @@ class Equasion {
         return a * b;
     }
 
+    concat (a: bigint, b: bigint): bigint {
+        return BigInt(`${a}${b}`);
+    }
+
 
     isPossiblyValid(currentInputs?: bigint[], f?: string): boolean {
         if (!currentInputs) {
@@ -99,29 +103,45 @@ class Equasion {
         if (currentInputs.length > 2) {
             let addResult = this.add(currentInputs[0], currentInputs[1]);
 
-            // if (addResult > this.result ) {
+            if (addResult > this.result ) {
                 // console.log(`invalid - f: ${f} + ${currentInputs[1]} = ${addResult}`);
                 // return false;
                 
-            // } else {
+            } else {
                 if (this.isPossiblyValid([addResult, ...currentInputs.slice(2)], f + ` + ${currentInputs[1]}`)) {
                     // console.log(`solving - isPossiblyValid for ${this.toString()} for add ${currentInputs}`);
                     return true;
                 }
-            // }
+            }
+
+            // 2941973819040
+            // 2941973819040
 
             let mulResult = this.multiply(currentInputs[0], currentInputs[1]);
 
-            // if (mulResult > this.result ) {
+            if (mulResult > this.result ) {
                 // console.log(`invalid - f: ${f} * ${currentInputs[1]} = ${mulResult}`);
                 // return false;
-            // } else {
+            } else {
                 if (this.isPossiblyValid([mulResult, ...currentInputs.slice(2)], f + ` * ${currentInputs[1]}`)) {
                     // console.log(`solving - isPossiblyValid for ${this.toString()} for mul ${currentInputs}`);
                     return true;
 
                 }
-            // }
+            }
+
+            let concatResult = this.concat(currentInputs[0], currentInputs[1]);
+
+            if (concatResult > this.result ) {
+                // console.log(`invalid - f: ${f} || ${currentInputs[1]} = ${mulResult}`);
+                // return false;
+            } else {
+                if (this.isPossiblyValid([concatResult, ...currentInputs.slice(2)], f + ` || ${currentInputs[1]}`)) {
+                    // console.log(`solving - isPossiblyValid for ${this.toString()} for concat ${currentInputs}`);
+                    return true;
+
+                }
+            }
             // console.log(`invalid - isPossiblyValid for ${this.toString()} for ${f}`);
             return false
 
@@ -136,6 +156,13 @@ class Equasion {
             // console.log(`checking - f: ${f} * ${currentInputs[1]} = ${mulResult}`);
             if (mulResult === this.result) {
                 // console.log(`valid - isPossiblyValid for ${this.toString()} for mul ${currentInputs} - term`);
+                return true;
+            }
+            
+            let concatResult = this.concat(currentInputs[0], currentInputs[1]);
+            // console.log(`checking - f: ${f} || ${currentInputs[1]} = ${mulResult}`);
+            if (concatResult === this.result) {
+                // console.log(`valid - isPossiblyValid for ${this.toString()} for concat ${currentInputs} - term`);
                 return true;
             }
             // console.log(`invalid - isPossiblyValid for ${this.toString()} for ${f} - term`);
