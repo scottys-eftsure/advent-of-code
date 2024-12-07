@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 export function readInput(): string {
-    const inputPath = join(__dirname, 'test.input.txt');
+    const inputPath = join(__dirname, 'input.txt');
     return readFileSync(inputPath, 'utf-8');
 }
 
@@ -33,6 +33,7 @@ function buildLab(data: string[][]): { guard: Guard; lab: Lab } {
 class Lab {
     bound: Coord;
     obstructions: { [key: string]: Obstruction } = {};
+    tempObstruction: Coord | undefined;
 
     constructor(bound: Coord) {  
         this.bound = bound;
@@ -51,7 +52,21 @@ class Lab {
     toString(): string { 
         return `Lab(bound: ${this.bound})`;   
     }
+    
+    removeObstruction(loc: Coord): void {
+        delete this.obstructions[loc.toString()];
+    }
 
+    addTempObstruction(loc: Coord): Obstruction {
+        let obstruction = this.addObstruction(loc);
+
+        if (this.tempObstruction !== undefined) {
+            this.removeObstruction(this.tempObstruction);
+        }
+        this.tempObstruction = loc;
+
+        return obstruction;
+    }
 
 
 }
@@ -97,26 +112,38 @@ class Guard {
     loc: Coord;
     dir: Direction;
     lab: Lab;
-    visited: { [key: string]: Coord } = {};
+    visited: { [key: string]: { loc: Coord, dir: Direction } } = {};
 
     constructor(start: Coord, lab: Lab) {   
         this.loc = start;
         this.dir = Direction.up;
         this.lab = lab;
-        this.visited[start.toString()] = start;
+        this.addVisitedCurrent();
     }
 
     move(): boolean {
+        // console.log(this.toString());
         if (this.checkColision()) {
             this.turnRight();
+        } else {
+            this.loc = this.loc.getNeighbor(this.dir);
         }
-        this.loc = this.loc.getNeighbor(this.dir);
+        if (this.isInLoop()) {
+            return false;
+        }
         if (this.isInLab()) {
-            this.visited[this.loc.toString()] = this.loc;
+            this.addVisitedCurrent();
+            return true;
+        } else {
+            return false;
         }
-        return this.isInLab();
-        
+        // return this.isInLab() && !this.isInLoop();
     }
+
+    addVisitedCurrent() {
+        this.visited[`${this.loc.toString()}, ${this.dir}`] = { loc: this.loc, dir: this.dir };
+    }
+
 
     turnRight() {
         switch (this.dir) {
@@ -150,7 +177,15 @@ class Guard {
     }
 
     getCountVisited(): number {
-        return Object.keys(this.visited).length;
+        const distinctLocs = new Set<string>();
+        for (const key in this.visited) {
+            distinctLocs.add(this.visited[key].loc.toString());
+        }
+        return distinctLocs.size;
+    }
+
+    isInLoop(): boolean {
+        return this.visited[`${this.loc.toString()}, ${this.dir}`] !== undefined;
     }
 
     
@@ -169,18 +204,40 @@ function part1() {
     let input = readInput();
     let grid = processData(input);
     let { guard, lab } = buildLab(grid);
-    console.log(guard.toString());
-    while (guard.move()) {
-        console.log(guard.toString());
-    }
+    while (guard.move()) {}
     return guard.getCountVisited();
 }
 
 function part2() {
     let input = readInput();
     let grid = processData(input);
-    return 0;
+    let { guard, lab } = buildLab(grid);
+
+    // console.log(guard.toString());
+
+    // console.log(lab.obstructions)
+    // lab.addTempObstruction(new Coord(0, 0));
+    // console.log(lab.obstructions)
+    // lab.addTempObstruction(new Coord(0, 1));
+    // console.log(lab.obstructions)
+    let locations = new Set<string>();
+    while (guard.move()) {
+        
+        let { guard: curGuard, lab: curLab } = buildLab(grid);
+        curLab.addTempObstruction(guard.loc.getNeighbor(guard.dir));
+        while (curGuard.move()) {}
+        if (curGuard.isInLoop()) {
+            locations.add(guard.loc.getNeighbor(guard.dir).toString());
+        }
+    }
+    console.log(locations);
+    console.log(locations.size);
+
+    return locations.size;
+
+
 }
 
 console.log(`Part 1 Answer: ${part1()}`);
 console.log(`Part 2 Answer: ${part2()}`);
+// (3, 6), (6, 7), (7, 7), (1, 8), (3, 8), (7, 9)
