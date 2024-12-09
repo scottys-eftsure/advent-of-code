@@ -49,6 +49,15 @@ class Coord {
     calculateDistance(other: Coord): CoordRelitive {
         return new CoordRelitive(this.x - other.x, this.y - other.y);
     }
+
+    addRelitiveCoord(relitive: CoordRelitive): Coord {
+        return new Coord(this.x + relitive.x, this.y + relitive.y);
+    }
+
+    minusRelitiveCoord(relitive: CoordRelitive): Coord {
+        return new Coord(this.x - relitive.x, this.y - relitive.y);
+    }
+
 }
 
 class CoordRelitive extends Coord {
@@ -99,6 +108,32 @@ class Map {
         this.antennas[antenna.frequency].push(antenna);
     }
 
+    
+    addAllAntenna(antenna: Antenna): void {
+        console.log(`Adding ${antenna.toString()}`);
+
+        if (this.antennas[antenna.frequency] === undefined) {
+            this.antennas[antenna.frequency] = [antenna];
+            return;
+        } 
+        for (let otherAntenna of this.antennas[antenna.frequency]) {
+
+            let antinodes = antenna.calculateAllAntinodes(otherAntenna);
+            for (let antinode of antinodes) {
+                if (this.isInBounds(antinode.loc)) {
+
+                    if (this.antinodes[antinode.loc.toString()] === undefined) {
+                        this.antinodes[antinode.loc.toString()] = [antinode];
+                    } else {
+                        this.antinodes[antinode.loc.toString()].push(antinode);
+                    }
+                }
+            }
+        }
+        
+        this.antennas[antenna.frequency].push(antenna);
+    }
+
     isInBounds(coord: Coord): boolean {
         return coord.x >= 0 && coord.x < this.width && coord.y >= 0 && coord.y < this.height;
     }
@@ -106,7 +141,6 @@ class Map {
     countAntinodes(): number {
         let count = 0;
         for (let key in this.antinodes) {
-            // count += this.antinodes[key].length;
             count++;
         }
         return count;
@@ -117,10 +151,12 @@ class Map {
 class Antenna {
     frequency: string;
     loc: Coord;
+    map: Map;
 
-    constructor(frequency: string, x: number, y: number) {
+    constructor(frequency: string, x: number, y: number, map: Map) {
         this.frequency = frequency;
         this.loc = new Coord(x, y);
+        this.map = map;
     }
 
     toString(): string {
@@ -140,6 +176,29 @@ class Antenna {
 
         console.log(`Adding Antidnodes: ${antinodes}`);
 
+        return antinodes;
+    }
+
+    
+    calculateAllAntinodes(otherAntenna: Antenna): Antinode[] {
+        let antinodes: Antinode[] = [new Antinode(this.frequency, this.loc.x, this.loc.y)];
+
+        let distance = this.loc.calculateDistance(otherAntenna.loc);
+
+        let nextAntinodeLoc = this.loc.addRelitiveCoord(distance);
+        while (this.map.isInBounds(nextAntinodeLoc)) {
+            let antinode = new Antinode(this.frequency, nextAntinodeLoc.x, nextAntinodeLoc.y);
+            antinodes.push(antinode);
+            nextAntinodeLoc = nextAntinodeLoc.addRelitiveCoord(distance);
+        }
+
+        nextAntinodeLoc = this.loc.minusRelitiveCoord(distance);
+        while (this.map.isInBounds(nextAntinodeLoc)) {
+            let antinode = new Antinode(this.frequency, nextAntinodeLoc.x, nextAntinodeLoc.y);
+            antinodes.push(antinode);
+            nextAntinodeLoc = nextAntinodeLoc.minusRelitiveCoord(distance);
+        }
+        
         return antinodes;
     }
 }
@@ -176,7 +235,7 @@ function part1() {
 
     for (let antennaData of data.antennas) {
 
-        let antenna = new Antenna(antennaData[0], antennaData[1], antennaData[2]);
+        let antenna = new Antenna(antennaData[0], antennaData[1], antennaData[2], map);
         map.addAntenna(antenna);
     }
 
@@ -187,7 +246,17 @@ function part1() {
 function part2() {
     let input = readInput();
     let data = processData(input);
-    return 0;
+
+    let map = new Map(data.dimensions[0], data.dimensions[1]);
+    console.log(map.toString());
+
+    for (let antennaData of data.antennas) {
+
+        let antenna = new Antenna(antennaData[0], antennaData[1], antennaData[2], map);
+        map.addAllAntenna(antenna);
+    }
+
+    return map.countAntinodes();
 }
 
 
