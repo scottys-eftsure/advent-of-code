@@ -60,6 +60,16 @@ class TopographicMap {
         }
         return total;
     }
+
+    calculateTrailheadsRating(): number {
+        console.log(this.trailheads)
+        let total = 0; 
+        for (let trailhead of this.trailheads) {
+            let trails = trailhead.calculateTrailRating(1, 9);
+            total += trails
+        }
+        return total;
+    }
 }
 
 class Point {
@@ -111,6 +121,21 @@ class Point {
         }
         return foundSet;
     }
+
+    
+    calculateTrailRating(slope: number, endHeight: number): number {
+        if (this.height === endHeight) {
+            return 1
+        }
+
+        let neighbours = this.neighboursWithSlope(slope);
+        let foundRating = 0;
+        for (let neighbour of neighbours) {
+            let found = neighbour.calculateTrailRating(slope, endHeight);
+            foundRating += found;
+        }
+        return foundRating;
+    }
     
 }
 
@@ -126,7 +151,9 @@ function part1() {
 function part2() {
     let input = readInput();
     let data = processData(input);
-    return 0;
+    let map = new TopographicMap(data);
+    let trails = map.calculateTrailheadsRating();
+    return trails;
 }
 
 console.log(`Part 1 Answer: ${part1()}`);
