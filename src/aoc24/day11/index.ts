@@ -66,6 +66,7 @@ class Line {
     }
 }
 
+
 class Stone {
     value: number;
     prev: Stone | undefined;
@@ -125,13 +126,89 @@ class Stone {
     }
 }
 
+class LineMap {
+    stones: Map<number, number> = new Map();
+
+    constructor(initialValues: number[]) {
+        for (let val of initialValues) {
+            this.addStone(val, 1);
+        }
+    }
+
+    addStone(value: number, total: number) {
+        this.stones.set(value, (this.stones.get(value) ?? 0) + total);
+    }
+
+    removeStone(value: number, total: number) {
+        if (this.stones.has(value)) {
+            let count = this.stones.get(value) ?? 0;
+                this.stones.set(value, count - total);
+            if (this.stones.get(value) === 0) {
+                this.stones.delete(value);
+            }
+        }
+    }
+
+    length() {
+        let length = 0;
+        for (let [key, value] of this.stones) {
+            length += value;
+        }
+        return length;
+    }
+
+    blink() {
+        const entries = Array.from(this.stones.entries());
+        for (let [key, value] of entries) {
+            this.blinkStone(key, value);
+        }
+        // console.log(this.toString());
+    }
+
+    
+    spiltStone(value: number, total: number) {
+        let valString = value.toString();
+
+        if (valString.length % 2 === 1) {
+            throw new Error('Cannot split stone with odd value');
+        }
+
+        const mid = valString.length / 2;
+        this.addStone(Number(valString.slice(0, mid)), total);
+        this.addStone(Number(valString.slice(mid)), total);
+        // console.log(`Splitting ${this.value} into ${firstHalf.value} and ${secondHalf.value}`);
+    }
+
+    blinkStone(value: number, total: number) {
+        let valString = value.toString();
+        if (value === 0) {
+            this.addStone(1, total);
+        } else if (valString.length % 2 === 0) {
+            this.spiltStone(value, total);
+        } else {
+            this.addStone(value * 2024, total);
+        }
+        this.removeStone(value, total);
+    }
+
+    toString() {
+        let result = 'Line: \n'
+        for (let [key, value] of this.stones) {
+            result += `  -> ${key}: ${value}\n`;
+        }
+        // result += this.stones;
+        return result;
+
+    }
+}
+
 function part1() {
     let input = readInput();
     let data = processData(input);
     let line = new Line(data);
     
-    for (let i = 0; i < 75; i++) {
-        console.log(`Iteration ${i}`);
+    for (let i = 0; i < 25; i++) {
+        // console.log(`Iteration ${i}`);
         line.blink();
     }
     return line.length();
@@ -140,7 +217,16 @@ function part1() {
 function part2() {
     let input = readInput();
     let data = processData(input);
-    return 0;
+    let line = new LineMap(data);
+    // console.log(line.toString());
+    
+    for (let i = 0; i < 75; i++) {
+        // console.log(`Iteration ${i}`);
+        line.blink();
+        // console.log(line.length());
+    }
+    // console.log(line.toString());
+    return line.length();
 }
 
 console.log(`Part 1 Answer: ${part1()}`);
