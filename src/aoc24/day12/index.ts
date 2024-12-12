@@ -11,12 +11,30 @@ export function processData(data: string): string[][] {
     return lines.map(line => line.split(''));
 }
 
+enum Direction {
+    left = 'left',
+    right = 'right',
+    above = 'above',
+    below = 'below'
+}
+
+function getPerpendicularDirections(direction: Direction): Direction[] {
+    switch (direction) {
+        case Direction.left:
+        case Direction.right:
+            return  [ Direction.above, Direction.below ];
+        case Direction.above:
+        case Direction.below:
+            return [ Direction.left, Direction.right ];
+    }
+}
+
 class Plant {
     type: string;
-    plot: Plot | undefined;
+    plot!: Plot;
     x: number;
     y: number;
-    neighbours: Map<string, Plant> = new Map();
+    neighbours: Map<Direction, Plant> = new Map();
 
     constructor(type: string, x: number, y: number) {
         this.type = type;
@@ -37,11 +55,39 @@ class Plant {
         }
     }
 
+    calculateSideSize(direction: Direction) {
+        let sideSize = 0;
+        if (this.neighbours.get(direction)?.plot === this.plot) {
+            return sideSize;
+        }
+        sideSize++;
+
+        for (let perpendicularDirection of getPerpendicularDirections(direction)) {
+            let nextPlant = this.neighbours.get(perpendicularDirection);
+            while (nextPlant && nextPlant.plot === this.plot && nextPlant.neighbours.get(direction)?.plot !== this.plot) {
+                sideSize++;
+                nextPlant = nextPlant.neighbours.get(perpendicularDirection);
+            }
+        }
+        return sideSize;
+    }
+
+    getSidesSize() {
+
+        return [
+            this.calculateSideSize(Direction.left),
+            this.calculateSideSize(Direction.right),
+            this.calculateSideSize(Direction.above),
+            this.calculateSideSize(Direction.below),
+        ]
+    }
+
 }
 
 class Plot {
     type: string;
     plants: Set<Plant> = new Set();
+    plantsMap: { [key: string]: Plant } = {};
 
     constructor(startingPlant: Plant) {
         this.type = startingPlant.type;
@@ -67,10 +113,11 @@ class Plot {
         }
         plant.plot = this;
         this.plants.add(plant);
+        this.plantsMap[`${plant.x},${plant.y}`] = plant;
     }
 
     toString() {
-        return `Plot(type: ${this.type}, area: ${this.area}, perimeter: ${this.perimeter}: price: ${this.price})`;
+        return `Plot(type: ${this.type}, area: ${this.area}, perimeter: ${this.perimeter}: price: ${this.price}, sides: ${this.sides}, discountPrice: ${this.discountPrice})`;
     }
 
     get area() {
@@ -91,6 +138,28 @@ class Plot {
 
     get price() {
         return this.area * this.perimeter;
+    }
+
+    get sides() {
+        let sidesSizeCount: Map<number, number> = new Map();
+        for (let plant of this.plants) {
+            let sidesSize = plant.getSidesSize();
+            for (let sideSize of sidesSize) {
+                if (sideSize > 0) {
+                    sidesSizeCount.set(sideSize, (sidesSizeCount.get(sideSize) ?? 0) + 1);
+                }
+            }
+        }
+        let sides = 0;
+        for (let [key, value] of sidesSizeCount) {
+            sides += value / key;
+        }
+        return sides;
+    }
+
+    get discountPrice() {
+        // return -1;
+        return this.area * this.sides;
     }
 }
 
@@ -124,10 +193,10 @@ class Farm {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 let plant = this.plants[`${x},${y}`];
-                plant.neighbours.set('left', this.plants[`${x - 1},${y}`]);
-                plant.neighbours.set('right', this.plants[`${x + 1},${y}`]);
-                plant.neighbours.set('above', this.plants[`${x},${y - 1}`]);
-                plant.neighbours.set('below', this.plants[`${x},${y + 1}`]);
+                plant.neighbours.set(Direction.left, this.plants[`${x - 1},${y}`]);
+                plant.neighbours.set(Direction.right, this.plants[`${x + 1},${y}`]);
+                plant.neighbours.set(Direction.above, this.plants[`${x},${y - 1}`]);
+                plant.neighbours.set(Direction.below, this.plants[`${x},${y + 1}`]);
             }
         }
     }
@@ -162,21 +231,27 @@ class Farm {
     get price() {
         return this.plots.reduce((acc, plot) => acc + plot.price, 0);
     }
+
+    get dicountPrice() {
+        return this.plots.reduce((acc, plot) => acc + plot.discountPrice, 0);
+    }
 }
 
 function part1() {
     let input = readInput();
     let grid = processData(input);
     let farm = new Farm(grid);
-    // console.log(farm.plots);
-    farm.printPlots();
     return farm.price;
 }
 
 function part2() {
     let input = readInput();
     let grid = processData(input);
-    return 0;
+    let farm = new Farm(grid);
+    farm.plots[0].sides;
+    // console.log(farm.plots);
+    farm.printPlots();
+    return farm.dicountPrice;
 }
 
 console.log(`Part 1 Answer: ${part1()}`);
