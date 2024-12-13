@@ -81,10 +81,10 @@ class Machine {
     prize: Coord;
     claw: Coord = new Coord(0, 0);
     
-    constructor( props: ButtonData ) {
+    constructor( props: ButtonData, error: number = 0) {
         this.buttonA = new Button(props.buttonA.x, props.buttonA.y, 3);
         this.buttonB = new Button(props.buttonB.x, props.buttonB.y, 1);
-        this.prize = new Coord(props.prize.x, props.prize.y);
+        this.prize = new Coord(props.prize.x + error, props.prize.y + error);
     }
 
     moveClaw(button: Button) {
@@ -142,7 +142,12 @@ function part1() {
 function part2() {
     let input = readInput();
     let games = processData(input);
-    return 0;
+    let totalCost = 0;
+    for (let game of games) {
+        let machine = new Machine(game, 10000000000000);
+        totalCost += machine.calcCost();
+    }
+    return totalCost;
 }
 
 console.log(`Part 1 Answer: ${part1()}`);
