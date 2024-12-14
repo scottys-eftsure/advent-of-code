@@ -108,7 +108,6 @@ class Bathroom {
     }
 
     calcluateSafetyFactor() {
-        // count robots per quadrant ignoring any exactly in the middle
 
         let quadrants = [0, 0, 0, 0]; // top-right, top-left, bottom-left, bottom-right
         const midX = Math.floor(this.width / 2);
@@ -137,6 +136,31 @@ class Bathroom {
         return quadrants.reduce((acc, val) => acc * val, 1);
         
     }
+
+    calculateAverageClosestNeighborDistance(): number {
+        if (this.robots.length < 2) return 0;
+
+        const distances = this.robots.map(robot1 => {
+            // Find closest distance to any other robot
+            const closestDistance = Math.min(...this.robots
+                .filter(robot2 => robot1 !== robot2)
+                .map(robot2 => {
+                    const dx = Math.abs(robot1.position.x - robot2.position.x);
+                    const dy = Math.abs(robot1.position.y - robot2.position.y);
+                    return Math.sqrt(dx * dx + dy * dy);
+                }));
+            return closestDistance;
+        });
+
+        // Calculate median of all closest distances
+        const sorted = distances.sort((a, b) => a - b);
+        const middle = Math.floor(sorted.length / 2);
+        const median = sorted.length % 2 === 0 
+            ? (sorted[middle - 1] + sorted[middle]) / 2
+            : sorted[middle];
+        return median;
+    }
+
 }
 
 function part1() {
@@ -145,10 +169,10 @@ function part1() {
 
     // let bathroom = new Bathroom(data, 11, 7);
     let bathroom = new Bathroom(data, 101, 103);
-    bathroom.showRobots();
+    // bathroom.showRobots();
     for (let i = 0; i < 100 ; i++) {
         bathroom.moveRobots();
-        // bathroom.showRobots();
+        bathroom.showRobots();
     }
     let safetyFactor = bathroom.calcluateSafetyFactor();
     // console.log(safetyFactor);
@@ -159,7 +183,23 @@ function part1() {
 function part2() {
     let input = readInput();
     let data = processData(input);
-    return 0;
+
+    // let bathroom = new Bathroom(data, 11, 7);
+    let bathroom = new Bathroom(data, 101, 103);
+    for (let i = 0; i < 100000 ; i++) {
+        bathroom.moveRobots();
+        let averageDistance = bathroom.calculateAverageClosestNeighborDistance();
+        if (averageDistance < 1.4) {
+            bathroom.showRobots();
+            console.log(`Average closest neighbor distance: ${averageDistance}`);
+            console.log(bathroom.second)
+            console.log()
+        }
+    }
+    let safetyFactor = bathroom.calcluateSafetyFactor();
+    // console.log(safetyFactor);
+
+    return safetyFactor;
 }
 
 console.log(`Part 1 Answer: ${part1()}`);
