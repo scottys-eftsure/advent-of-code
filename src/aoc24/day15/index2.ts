@@ -1,8 +1,9 @@
+import { listen } from 'bun';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
 export function readInput(): string {
-    const inputPath = join(__dirname, 'test.input.txt');
+    const inputPath = join(__dirname, 'input.txt');
     return readFileSync(inputPath, 'utf-8');
 }
 
@@ -45,11 +46,11 @@ class Coord {
 
 
 abstract class Item {
-    coord: Coord;
+    coords: Coord[];
     type: string;
 
-    constructor(position: Coord, type: string) {
-        this.coord = position;
+    constructor(positions: Coord[], type: string) {
+        this.coords = positions;
         this.type = type;
     }
 
@@ -61,9 +62,9 @@ abstract class Item {
 abstract class Movable extends Item {
     movable = true;
     
-    move(instruction: Instruction): Coord {
-        this.coord = this.coord.getNewPosition(instruction);
-        return this.coord;
+    move(instruction: Instruction): Coord[] {
+        this.coords = this.coords.map(coord => coord.getNewPosition(instruction));
+        return this.coords;
     }
 }
 
@@ -92,9 +93,10 @@ class Instruction {
     }
 }
 
-class Warehouse {
+class PhatWarehouse {
     robot!: Robot;
     grid: { [key: string]: Item };
+    boxes: Box[] = [];
     instructions: Instruction[];
     height: number;
     width: number;
@@ -103,19 +105,25 @@ class Warehouse {
         this.grid = {};
         this.instructions = [];
         this.height = grid.length;
-        this.width = grid[0].length;
+        this.width = grid[0].length * 2;
 
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 const type = grid[y][x];
-                let coord = new Coord(x, y);
+                let coordL = new Coord(x * 2, y);
+                let coordR = new Coord(x * 2 + 1, y);
                 if (type === 'O') {
-                    this.grid[coord.toString()] = new Box(coord, type);
+                    let box = new Box([coordL, coordR], type);
+                    this.grid[coordL.toString()] = box;
+                    this.grid[coordR.toString()] = box;
+                    this.boxes.push(box);
                 } else if (type === '@') {
-                    this.robot = new Robot(coord, type);
-                    this.grid[coord.toString()] = this.robot;
+                    let robot = new Robot([coordL], type);
+                    this.robot = robot;
+                    this.grid[coordL.toString()] = this.robot;
                 } if (type === '#') {
-                    this.grid[coord.toString()] = new Wall(coord, type);
+                    this.grid[coordL.toString()] = new Wall([coordL], type);
+                    this.grid[coordR.toString()] = new Wall([coordR], type);
                 }
             }
         }
@@ -125,31 +133,51 @@ class Warehouse {
         }
     }
 
-    getNeighbour(obj: Item, instruction: Instruction) {
-        return this.grid[obj.coord.getNewPosition(instruction).toString()];
+    getMovableNeighbours(obj: Item, instruction: Instruction): Set<Movable> | undefined {
+        let neighbours = new Set<Movable>();
+        for (const coord of obj.coords) {
+            let neighbour = this.grid[coord.getNewPosition(instruction).toString()];
+            if (neighbour && neighbour !== obj) {
+                if (!(neighbour instanceof Movable)) {
+                    return undefined;
+                }
+                let additionalNeighbours = this.getMovableNeighbours(neighbour, instruction);
+                if (!additionalNeighbours) {
+                    return undefined;
+                }
+                for (const n of additionalNeighbours) {
+                    neighbours.add(n);
+                }
+                neighbours.add(neighbour);
+            }
+        }
+        return neighbours;
     }
 
     moveObject(obj: Movable, direction: Instruction) {
-        delete this.grid[obj.coord.toString()];
+        for (const coord of obj.coords) {
+            delete this.grid[coord.toString()];
+        }
         obj.move(direction);
-        this.grid[obj.coord.toString()] = obj;
+        for (const coord of obj.coords) {
+            this.grid[coord.toString()] = obj;
+        }
     }
 
     moveObjects(obj: Item, direction: Instruction): boolean {
         // console.log(obj);
         if (!(obj instanceof Movable)) return false;
 
-        const neighbour = this.getNeighbour(obj, direction);
-        if (neighbour === undefined) {
-            this.moveObject(obj, direction);
-            return true;
+        const neighbours = this.getMovableNeighbours(obj, direction);
+        if (!neighbours) {
+            return false;
         }
 
-        let movable = this.moveObjects(neighbour, direction);
-        if (movable) {
-            this.moveObject(obj, direction);
+        this.moveObject(obj, direction);
+        for (const neighbour of neighbours) {
+            this.moveObject(neighbour, direction);
         }
-        return movable;
+        return true;
     }
 
     completeInstructions() {
@@ -161,10 +189,8 @@ class Warehouse {
 
     calculateBoxScore() {
         let score = 0;
-        for (const box of Object.values(this.grid)) {
-            if (box instanceof Box) {
-                score += box.coord.x + (box.coord.y * 100);
-            }
+        for (const box of this.boxes) {
+            score += box.coords[0].x + (box.coords[0].y * 100);
         }
         return score;
     }
@@ -186,21 +212,31 @@ class Warehouse {
 }
 
 
-function part1() {
+// function part1() {
+//     let input = readInput();
+//     let data = processData(input);
+//     const warehouse = new PhatWarehouse(data.grid, data.instructions);
+//     warehouse.completeInstructions();
+//     // warehouse.showWarehouse();
+//     // console.log(warehouse.calculateBoxScore());
+//     return warehouse.calculateBoxScore();
+// }
+
+function part2() {
     let input = readInput();
     let data = processData(input);
-    const warehouse = new Warehouse(data.grid, data.instructions);
+    const warehouse = new PhatWarehouse(data.grid, data.instructions);
+    // for (const item of Object.values(warehouse.grid)) {
+    //     if (item instanceof Box) {
+    //         console.log(item.coords);
+    //     }
+    // }
+    warehouse.showWarehouse();
     warehouse.completeInstructions();
-    // warehouse.showWarehouse();
+    warehouse.showWarehouse();
     // console.log(warehouse.calculateBoxScore());
     return warehouse.calculateBoxScore();
 }
 
-function part2() {
-    // let input = readInput();
-    // let data = processData(input);
-    // return 0;
-}
-
-console.log(`Part 1 Answer: ${part1()}`);
+// console.log(`Part 1 Answer: ${part1()}`);
 console.log(`Part 2 Answer: ${part2()}`);
