@@ -29,6 +29,9 @@ export class Computer {
             let value = this.step();
             // console.log(this.toString());
             if (value !== undefined) {
+                if (output.length <= this.program.length && value !== this.program[output.length]) {
+                    return [];
+                }
                 output.push(value);
             }
         }

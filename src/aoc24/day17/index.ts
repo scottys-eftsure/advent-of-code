@@ -37,17 +37,27 @@ function part1() {
 function part2() {
     let input = readInput();
     let data = processData(input);
+    console.log(data.program)
     let output: number[] = [];
-    for (let i = 0; i < 1000; i++) {
-    // while (output == data.program) {
+    let i = 1000000000 
+    let total = 10000000000
+    for (i; i < total; i++) {
+        data.registers['A'] = i;
+
         let computer = new Computer(data.program, data.registers);
         output = computer.run();
         if (output.toString() == data.program.toString()) {
+            console.log('Found it!');
             break;
+        } 
+
+        if (i % (total / 100) === 0) {
+            console.log(i);
         }
     }
-    return output.toString();
+    console.log(output);
+    return i;
 }
 
-console.log(`Part 1 Answer: ${part1()}`);
+// console.log(`Part 1 Answer: ${part1()}`);
 console.log(`Part 2 Answer: ${part2()}`);

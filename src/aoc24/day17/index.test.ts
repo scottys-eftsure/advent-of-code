@@ -33,4 +33,14 @@ describe('Computer', () => {
         const output = computer.run();
         expect(output).toStrictEqual([4,6,3,5,6,3,5,2,1,0]);
     });
+    test('test part 1 solution', () => {
+        const computer = new Computer([2,4,1,2,7,5,1,3,4,3,5,5,0,3,3,0], {A: 64584136, B: 0, C: 0});
+        const output = computer.run();
+        expect(output).toStrictEqual([3,7,1,7,2,1,0,6,3]);
+    });
+    test('test main example p2', () => {
+        const computer = new Computer([0,3,5,4,3,0], {A: 117440, B: 0, C: 0});
+        const output = computer.run();
+        expect(output).toStrictEqual([0,3,5,4,3,0]);
+    });
 });
