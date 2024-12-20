@@ -36,32 +36,71 @@ class Design {
     }
 }
 
+class TrieNode {
+    children: Map<string, TrieNode>;
+    towels: { towel: Towel, length: number }[];
+    
+    constructor() {
+        this.children = new Map();
+        this.towels = [];
+    }
+}
+
 class Onsen {
     towels: Towel[];
     designs: Design[];
+    patternTrie: TrieNode;
+    memoizedResults: Map<string, number>;
 
     constructor(towels: Towel[], designs: Design[]) {
-        this.towels = towels
-        this.designs = designs
+        this.towels = towels;
+        this.designs = designs;
+        this.patternTrie = new TrieNode();
+        this.memoizedResults = new Map();
+        
+        // Build the trie
+        for (let towel of towels) {
+            let node = this.patternTrie;
+            const pattern = towel.pattern;
+            
+            for (let char of pattern) {
+                if (!node.children.has(char)) {
+                    node.children.set(char, new TrieNode());
+                }
+                node = node.children.get(char)!;
+            }
+            // Store the length with the towel to avoid pattern.length calls
+            node.towels.push({ towel, length: pattern.length });
+        }
     }
 
     toString() {
         return `Onsen(towels: ${this.towels.length}, designs: ${this.designs.length})`
     }
 
-    findValidTowels(design: Design):  { towel: Towel, design: Design }[] {
-        // console.log(design)
-        let results: { towel: Towel, design: Design }[] = [];
-
-        for (let towel of this.towels) {
-            if (towel.pattern === design.sequence.slice(0, towel.pattern.length)) {
+    findValidTowels(design: Design): { towel: Towel, remainingLength: number }[] {
+        let results: { towel: Towel, remainingLength: number }[] = [];
+        let node = this.patternTrie;
+        
+        for (let i = 0; i < design.sequence.length; i++) {
+            const char = design.sequence[i];
+            
+            if (!node.children.has(char)) {
+                break;
+            }
+            
+            node = node.children.get(char)!;
+            
+            // Use pre-calculated lengths instead of slicing
+            for (let { towel, length } of node.towels) {
                 results.push({
                     towel,
-                    design: new Design(design.sequence.slice(towel.pattern.length))
-                })
+                    remainingLength: design.sequence.length - length
+                });
             }
         }
-        return results
+        
+        return results;
     }
 
     fitTowelsToDesign(design: Design): Towel[] | undefined {
@@ -71,11 +110,11 @@ class Onsen {
         let validTowels = this.findValidTowels(design);
 
         for (let validTowel of validTowels) {
-            if (validTowel.design.sequence.length === 0) {
+            if (validTowel.remainingLength === 0) {
                 return [validTowel.towel]
             }
 
-            let result = this.fitTowelsToDesign(validTowel.design)
+            let result = this.fitTowelsToDesign(new Design(design.sequence.slice(design.sequence.length - validTowel.remainingLength)))
 
             if (result) {
                 return [validTowel.towel, ...result]
@@ -94,12 +133,55 @@ class Onsen {
         }
         return results
     }
+
+    fitAllPossibleTowelsToDesign(design: Design): number {
+        // Use memoization to avoid recalculating
+        const key = design.sequence;
+        if (this.memoizedResults.has(key)) {
+            return this.memoizedResults.get(key)!;
+        }
+
+        let total = 0;
+        let validTowels = this.findValidTowels(design);
+
+        for (let { towel, remainingLength } of validTowels) {
+            if (remainingLength === 0) {
+                total += 1;
+                continue;
+            }
+
+            if (remainingLength < 0) {
+                continue; // Early termination for invalid matches
+            }
+
+            // Create new Design only when necessary
+            total += this.fitAllPossibleTowelsToDesign(
+                new Design(design.sequence.slice(design.sequence.length - remainingLength))
+            );
+        }
+
+        // Store result in memo before returning
+        this.memoizedResults.set(key, total);
+        return total;
+    }
+
+    checkAllDesigns(): number {
+        let total = 0;
+        
+        for (let design of this.designs) {
+            // Clear memoization for each new design
+            this.memoizedResults.clear();
+            total += this.fitAllPossibleTowelsToDesign(design);
+        }
+        
+        return total;
+    }
 }
 
 function part1() {
     let input = readInput();
     let onsen = processData(input);
-    console.log(onsen)
+    // console.log(onsen)
     let designChecks = onsen.checkDesigns()
     console.log(designChecks)
     return designChecks.length;
@@ -108,7 +190,10 @@ function part1() {
 function part2() {
     let input = readInput();
     let onsen = processData(input);
-    return 0;
+    // console.log(onsen)
+    let designChecks = onsen.checkAllDesigns()
+    console.log(designChecks)
+    return designChecks;
 }
 
 console.log(`Part 1 Answer: ${part1()}`);
