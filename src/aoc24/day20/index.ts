@@ -160,6 +160,27 @@ class Track {
         return total
     }
 
+    findAllCheetsDistance(cheetDistnace: number, minimumTimeSaved: number = 0): number {
+        let totalCheets = 0
+        let cheets: Map<number, number> = new Map()
+
+        for (let i = 0; i < this.track.length; i++) {
+            for (let j = i + 1; j < this.track.length; j++) {
+                let distance = this.track[i].distance(this.track[j])
+                if (distance <= cheetDistnace) {
+                    let timeSaved = this.track[i].distanceFromEnd - this.track[j].distanceFromEnd - distance
+                    if (timeSaved >= minimumTimeSaved) {
+                        cheets.set(timeSaved, (cheets.get(timeSaved) || 0) + 1)
+                        totalCheets ++
+                    }
+                }
+                
+            }
+        }
+        console.log(cheets)
+        return totalCheets
+    }
+
 
 }
 
@@ -187,7 +208,12 @@ class PathNode extends Node {
     constructor(x: number, y: number, type: string) {
         super(x, y, type)
     }
+
+    distance(node: PathNode): number {
+        return Math.abs(this.x - node.x) + Math.abs(this.y - node.y)
+    }
 }
+
 
 
 function part1() {
@@ -201,7 +227,9 @@ function part1() {
 function part2() {
     let input = readInput();
     let data = processData(input);
-    return 0;
+    let track = new Track(data)
+    let cheets = track.findAllCheetsDistance(20, 100)
+    return cheets;
 }
 
 console.log(`Part 1 Answer: ${part1()}`);
